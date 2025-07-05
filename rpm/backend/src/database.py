@@ -9,7 +9,7 @@ config = get_config()
 
 # MongoDB Connection
 client = MongoClient(config.MONGODB_URI)
-db = client.get_database()
+db = client['ai_tutoring_platform']  # Specify database name
 
 # Collections
 users_collection = db.users
