@@ -226,6 +226,67 @@ def whitelist_user(user_id):
     User.whitelist_user(user_id)
     return jsonify({'message': 'User whitelisted successfully'})
 
+# Admin: Bulk whitelist users
+@app.route('/api/admin/bulk-whitelist', methods=['PATCH'])
+@require_auth
+def bulk_whitelist_users():
+    # Check if current user is admin
+    current_user = User.find_by_id(request.current_user_id)
+    if not current_user.get('is_admin', False):
+        return jsonify({'error': 'Admin access required'}), 403
+    
+    data = request.get_json()
+    user_ids = data.get('user_ids', [])
+    
+    if not user_ids:
+        return jsonify({'error': 'No user IDs provided'}), 400
+    
+    result = User.bulk_whitelist(user_ids)
+    return jsonify({
+        'message': f'Successfully whitelisted {result.modified_count} users',
+        'modified_count': result.modified_count
+    })
+
+# Admin: List all users (with pagination)
+@app.route('/api/admin/users', methods=['GET'])
+@require_auth
+def list_users():
+    # Check if current user is admin
+    current_user = User.find_by_id(request.current_user_id)
+    if not current_user.get('is_admin', False):
+        return jsonify({'error': 'Admin access required'}), 403
+    
+    page = int(request.args.get('page', 1))
+    limit = int(request.args.get('limit', 50))
+    filter_type = request.args.get('filter', 'all')  # all, waitlist, whitelisted
+    
+    users = User.list_users(page, limit, filter_type)
+    return jsonify(users)
+
+# Admin: Make user admin
+@app.route('/api/admin/make-admin/<user_id>', methods=['PATCH'])
+@require_auth
+def make_admin(user_id):
+    # Check if current user is admin
+    current_user = User.find_by_id(request.current_user_id)
+    if not current_user.get('is_admin', False):
+        return jsonify({'error': 'Admin access required'}), 403
+    
+    User.make_admin(user_id)
+    return jsonify({'message': 'User granted admin access successfully'})
+
+# Admin: Get waitlist stats
+@app.route('/api/admin/stats', methods=['GET'])
+@require_auth
+def get_admin_stats():
+    # Check if current user is admin
+    current_user = User.find_by_id(request.current_user_id)
+    if not current_user.get('is_admin', False):
+        return jsonify({'error': 'Admin access required'}), 403
+    
+    stats = User.get_user_stats()
+    return jsonify(stats)
+
 # Tutoring session
 @app.route('/api/tutor', methods=['POST'])
 @require_auth

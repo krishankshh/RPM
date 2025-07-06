@@ -13,6 +13,7 @@ import OnboardingPage from './components/OnboardingPage'
 import Dashboard from './components/Dashboard'
 import TutorPage from './components/TutorPage'
 import QuizPage from './components/QuizPage'
+import AdminDashboard from './components/AdminDashboard'
 import CookieConsent from './components/CookieConsent'
 import LoadingSpinner from './components/LoadingSpinner'
 
@@ -232,6 +233,15 @@ function App() {
                 onLogout={handleLogout}
                 updateCredits={updateCredits}
               />
+            } 
+          />
+          
+          <Route 
+            path="/admin" 
+            element={
+              !user ? <Navigate to="/login" /> :
+              !user.is_admin ? <Navigate to="/" /> :
+              <AdminDashboard />
             } 
           />
         </Routes>

@@ -136,6 +136,99 @@ class User:
         if bcrypt.checkpw(password.encode('utf-8'), user['password']):
             return user
         return None
+    
+    @staticmethod
+    def list_users(page=1, limit=50, filter_type='all'):
+        """List users with pagination and filtering"""
+        skip = (page - 1) * limit
+        
+        # Build filter query
+        query = {}
+        if filter_type == 'waitlist':
+            query['is_whitelisted'] = False
+        elif filter_type == 'whitelisted':
+            query['is_whitelisted'] = True
+        
+        # Get total count
+        total = users_collection.count_documents(query)
+        
+        # Get users
+        users = list(users_collection.find(
+            query,
+            {
+                'password': 0,  # Exclude password from results
+                'google_id': 0  # Exclude sensitive data
+            }
+        ).sort('created_at', -1).skip(skip).limit(limit))
+        
+        # Convert ObjectId to string
+        for user in users:
+            user['_id'] = str(user['_id'])
+            if 'created_at' in user:
+                user['created_at'] = user['created_at'].isoformat()
+            if 'whitelisted_at' in user:
+                user['whitelisted_at'] = user['whitelisted_at'].isoformat()
+            if 'last_login' in user:
+                user['last_login'] = user['last_login'].isoformat()
+        
+        return {
+            'users': users,
+            'pagination': {
+                'page': page,
+                'limit': limit,
+                'total': total,
+                'pages': (total + limit - 1) // limit
+            }
+        }
+    
+    @staticmethod
+    def make_admin(user_id):
+        """Make a user an admin"""
+        return users_collection.update_one(
+            {'_id': ObjectId(user_id)},
+            {
+                '$set': {
+                    'is_admin': True,
+                    'admin_granted_at': datetime.utcnow()
+                }
+            }
+        )
+    
+    @staticmethod
+    def get_user_stats():
+        """Get user statistics for admin dashboard"""
+        total_users = users_collection.count_documents({})
+        waitlisted_users = users_collection.count_documents({'is_whitelisted': False})
+        whitelisted_users = users_collection.count_documents({'is_whitelisted': True})
+        admin_users = users_collection.count_documents({'is_admin': True})
+        
+        # Get recent registrations (last 7 days)
+        week_ago = datetime.utcnow() - timedelta(days=7)
+        recent_registrations = users_collection.count_documents({
+            'created_at': {'$gte': week_ago}
+        })
+        
+        return {
+            'total_users': total_users,
+            'waitlisted_users': waitlisted_users,
+            'whitelisted_users': whitelisted_users,
+            'admin_users': admin_users,
+            'recent_registrations': recent_registrations
+        }
+    
+    @staticmethod
+    def bulk_whitelist(user_ids):
+        """Bulk whitelist multiple users"""
+        object_ids = [ObjectId(user_id) for user_id in user_ids]
+        return users_collection.update_many(
+            {'_id': {'$in': object_ids}},
+            {
+                '$set': {
+                    'is_whitelisted': True,
+                    'whitelisted_at': datetime.utcnow()
+                }
+            }
+        )
 
 class Credits:
     @staticmethod
