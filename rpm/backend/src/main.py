@@ -98,6 +98,88 @@ def google_login():
         }
     })
 
+# Manual user registration
+@app.route('/api/auth/register', methods=['POST'])
+def register():
+    data = request.get_json()
+    email = data.get('email')
+    password = data.get('password')
+    name = data.get('name')
+    phone = data.get('phone')
+    academic_level = data.get('academic_level')
+    subject_interest = data.get('subject_interest')
+    
+    if not all([email, password, name, academic_level, subject_interest]):
+        return jsonify({'error': 'Missing required fields'}), 400
+    
+    # Validate email format
+    import re
+    if not re.match(r'^[^\s@]+@[^\s@]+\.[^\s@]+$', email):
+        return jsonify({'error': 'Invalid email format'}), 400
+    
+    # Validate password strength
+    if len(password) < 8:
+        return jsonify({'error': 'Password must be at least 8 characters long'}), 400
+    
+    # Create user
+    user_id = User.create_manual_user(email, password, name, phone)
+    if not user_id:
+        return jsonify({'error': 'User with this email already exists'}), 409
+    
+    # Update profile immediately
+    User.update_profile(user_id, academic_level, subject_interest, "Improve understanding")
+    
+    # Get updated user
+    user = User.find_by_id(user_id)
+    
+    # Generate JWT token
+    token = generate_jwt_token(user_id)
+    
+    return jsonify({
+        'token': token,
+        'user': {
+            'id': str(user['_id']),
+            'email': user['email'],
+            'name': user['name'],
+            'phone': user.get('phone'),
+            'is_whitelisted': user.get('is_whitelisted', False),
+            'profile_completed': user.get('profile_completed', False)
+        }
+    }), 201
+
+# Manual user login
+@app.route('/api/auth/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    email = data.get('email')
+    password = data.get('password')
+    
+    if not all([email, password]):
+        return jsonify({'error': 'Email and password are required'}), 400
+    
+    # Verify user credentials
+    user = User.verify_password(email, password)
+    if not user:
+        return jsonify({'error': 'Invalid email or password'}), 401
+    
+    # Update last login
+    User.update_last_login(str(user['_id']))
+    
+    # Generate JWT token
+    token = generate_jwt_token(str(user['_id']))
+    
+    return jsonify({
+        'token': token,
+        'user': {
+            'id': str(user['_id']),
+            'email': user['email'],
+            'name': user['name'],
+            'phone': user.get('phone'),
+            'is_whitelisted': user.get('is_whitelisted', False),
+            'profile_completed': user.get('profile_completed', False)
+        }
+    })
+
 # User status check
 @app.route('/api/user/status')
 @require_auth

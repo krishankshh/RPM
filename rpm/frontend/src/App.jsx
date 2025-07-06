@@ -7,6 +7,7 @@ import Cookies from 'js-cookie'
 
 // Components
 import LoginPage from './components/LoginPage'
+import RegisterPage from './components/RegisterPage'
 import WaitlistPage from './components/WaitlistPage'
 import OnboardingPage from './components/OnboardingPage'
 import Dashboard from './components/Dashboard'
@@ -21,6 +22,7 @@ function App() {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
   const [credits, setCredits] = useState(null)
+  const [authError, setAuthError] = useState('')
 
   useEffect(() => {
     checkAuthStatus()
@@ -44,6 +46,7 @@ function App() {
   const handleGoogleLogin = async () => {
     try {
       setLoading(true)
+      setAuthError('')
       const result = await signInWithPopup(auth, googleProvider)
       const user = result.user
       
@@ -65,6 +68,51 @@ function App() {
       
     } catch (error) {
       console.error('Login failed:', error)
+      setAuthError(error.response?.data?.error || 'Login failed. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleManualLogin = async (credentials) => {
+    try {
+      setLoading(true)
+      setAuthError('')
+      
+      const response = await authAPI.login(credentials)
+      
+      Cookies.set('auth_token', response.data.token, { expires: 7 })
+      setUser(response.data.user)
+      
+      // Get credits
+      const creditsResponse = await authAPI.getUserStatus()
+      setCredits(creditsResponse.data.credits)
+      
+    } catch (error) {
+      console.error('Login failed:', error)
+      setAuthError(error.response?.data?.error || 'Login failed. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleRegister = async (userData) => {
+    try {
+      setLoading(true)
+      setAuthError('')
+      
+      const response = await authAPI.register(userData)
+      
+      Cookies.set('auth_token', response.data.token, { expires: 7 })
+      setUser(response.data.user)
+      
+      // Get credits
+      const creditsResponse = await authAPI.getUserStatus()
+      setCredits(creditsResponse.data.credits)
+      
+    } catch (error) {
+      console.error('Registration failed:', error)
+      setAuthError(error.response?.data?.error || 'Registration failed. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -74,6 +122,7 @@ function App() {
     Cookies.remove('auth_token')
     setUser(null)
     setCredits(null)
+    setAuthError('')
     auth.signOut()
   }
 
@@ -88,12 +137,41 @@ function App() {
   return (
     <Router>
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+        {authError && (
+          <div className="fixed top-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded z-50">
+            {authError}
+            <button 
+              onClick={() => setAuthError('')}
+              className="ml-2 text-red-500 hover:text-red-700"
+            >
+              ×
+            </button>
+          </div>
+        )}
+        
         <Routes>
           <Route 
             path="/login" 
             element={
               user ? <Navigate to="/" /> : 
-              <LoginPage onGoogleLogin={handleGoogleLogin} loading={loading} />
+              <LoginPage 
+                onGoogleLogin={handleGoogleLogin} 
+                onManualLogin={handleManualLogin}
+                onSwitchToRegister={() => window.location.href = '/register'}
+                loading={loading} 
+              />
+            } 
+          />
+          
+          <Route 
+            path="/register" 
+            element={
+              user ? <Navigate to="/" /> : 
+              <RegisterPage 
+                onRegister={handleRegister}
+                onSwitchToLogin={() => window.location.href = '/login'}
+                loading={loading} 
+              />
             } 
           />
           

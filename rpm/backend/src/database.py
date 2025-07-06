@@ -261,3 +261,52 @@ def verify_jwt_token(token):
     except jwt.InvalidTokenError:
         return None
 
+
+    @staticmethod
+    def create_manual_user(email, password, name, phone=None):
+        """Create a new user with email/password"""
+        # Check if user already exists
+        if users_collection.find_one({'email': email}):
+            return None
+        
+        # Hash password
+        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+        
+        user_data = {
+            'email': email,
+            'password': hashed_password,
+            'name': name,
+            'phone': phone,
+            'academic_level': None,
+            'subject_interest': None,
+            'learning_goals': None,
+            'is_whitelisted': False,  # Default to waitlist
+            'is_admin': False,
+            'created_at': datetime.utcnow(),
+            'last_login': datetime.utcnow(),
+            'profile_completed': False
+        }
+        
+        result = users_collection.insert_one(user_data)
+        
+        # Create initial credit account
+        Credits.create_credit_account(str(result.inserted_id))
+        
+        return str(result.inserted_id)
+    
+    @staticmethod
+    def find_by_email(email):
+        """Find user by email"""
+        return users_collection.find_one({'email': email})
+    
+    @staticmethod
+    def verify_password(email, password):
+        """Verify user password"""
+        user = User.find_by_email(email)
+        if not user or 'password' not in user:
+            return None
+        
+        if bcrypt.checkpw(password.encode('utf-8'), user['password']):
+            return user
+        return None
+
