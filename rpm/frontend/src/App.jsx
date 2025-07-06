@@ -197,6 +197,7 @@ function App() {
             path="/" 
             element={
               !user ? <Navigate to="/login" /> :
+              user.is_admin ? <Navigate to="/admin" /> :
               !user.is_whitelisted ? <Navigate to="/waitlist" /> :
               !user.profile_completed ? <Navigate to="/onboarding" /> :
               <Dashboard 

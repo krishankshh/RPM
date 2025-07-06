@@ -94,7 +94,8 @@ def google_login():
             'name': user['name'],
             'picture': user.get('picture'),
             'is_whitelisted': user.get('is_whitelisted', False),
-            'profile_completed': user.get('profile_completed', False)
+            'profile_completed': user.get('profile_completed', False),
+            'is_admin': user.get('is_admin', False)
         }
     })
 
@@ -143,7 +144,8 @@ def register():
             'name': user['name'],
             'phone': user.get('phone'),
             'is_whitelisted': user.get('is_whitelisted', False),
-            'profile_completed': user.get('profile_completed', False)
+            'profile_completed': user.get('profile_completed', False),
+            'is_admin': user.get('is_admin', False)
         }
     }), 201
 
@@ -176,7 +178,8 @@ def login():
             'name': user['name'],
             'phone': user.get('phone'),
             'is_whitelisted': user.get('is_whitelisted', False),
-            'profile_completed': user.get('profile_completed', False)
+            'profile_completed': user.get('profile_completed', False),
+            'is_admin': user.get('is_admin', False)
         }
     })
 
@@ -193,7 +196,8 @@ def user_status():
             'email': user['email'],
             'name': user['name'],
             'is_whitelisted': user.get('is_whitelisted', False),
-            'profile_completed': user.get('profile_completed', False)
+            'profile_completed': user.get('profile_completed', False),
+            'is_admin': user.get('is_admin', False)
         },
         'credits': credit_status
     })
