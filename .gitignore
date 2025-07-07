@@ -29,3 +29,10 @@ Thumbs.db
 *.log
 logs/
 
+
+
+# Frontend build artifacts
+/rpm/frontend/node_modules
+/rpm/frontend/dist
+
+
