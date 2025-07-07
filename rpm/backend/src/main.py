@@ -19,11 +19,29 @@ config = get_config()
 app = Flask(__name__, static_folder=os.path.join(os.path.dirname(__file__), 'static'))
 app.config['SECRET_KEY'] = config.SECRET_KEY
 
-# Enable CORS
-CORS(app, origins=config.CORS_ORIGINS, supports_credentials=True)
+# Enable CORS with proper configuration
+CORS(app, 
+     origins=["https://5000-ijm6ddv0krjs7u1jnra4f-2787b946.manusvm.computer", "http://localhost:3000", "http://localhost:5000"],
+     supports_credentials=True,
+     allow_headers=["Content-Type", "Authorization", "Origin", "Accept", "X-Requested-With"],
+     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+     expose_headers=["Content-Type", "Authorization"])
 
 # Initialize AI service
 ai_service = DeepSeekService()
+
+# Global OPTIONS handler for CORS preflight requests
+@app.before_request
+def handle_preflight():
+    if request.method == "OPTIONS":
+        response = jsonify({'status': 'ok'})
+        response.headers.add('Access-Control-Allow-Origin', request.headers.get('Origin', '*'))
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type, Authorization, Origin, Accept, X-Requested-With')
+        response.headers.add('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH')
+        response.headers.add('Access-Control-Allow-Credentials', 'true')
+        return response
+
+
 
 def require_auth(f):
     @wraps(f)
@@ -150,8 +168,17 @@ def register():
     }), 201
 
 # Manual user login
-@app.route('/api/auth/login', methods=['POST'])
+@app.route('/api/auth/login', methods=['POST', 'OPTIONS'])
 def login():
+    if request.method == 'OPTIONS':
+        # Handle preflight request
+        response = jsonify({'status': 'ok'})
+        response.headers.add('Access-Control-Allow-Origin', request.headers.get('Origin', '*'))
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type, Authorization, Origin, Accept, X-Requested-With')
+        response.headers.add('Access-Control-Allow-Methods', 'POST, OPTIONS')
+        response.headers.add('Access-Control-Allow-Credentials', 'true')
+        return response
+    
     data = request.get_json()
     email = data.get('email')
     password = data.get('password')
@@ -375,6 +402,47 @@ def serve(path):
             return send_from_directory(static_folder_path, 'index.html')
         else:
             return "Frontend not built", 404
+
+
+# User waitlist status
+@app.route('/api/user/waitlist', methods=['GET'])
+@require_auth
+def get_user_waitlist_status():
+    """Get the current user's waitlist status and position."""
+    try:
+        user_id = request.user_id
+        user = User.find_by_id(user_id)
+        
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+        
+        # If user is whitelisted or admin, they're not on waitlist
+        if user.get('is_whitelisted', False) or user.get('is_admin', False):
+            return jsonify({
+                'on_waitlist': False,
+                'is_whitelisted': user.get('is_whitelisted', False),
+                'is_admin': user.get('is_admin', False)
+            })
+        
+        # Get queue position
+        queue_position = User.get_queue_position(user_id)
+        
+        return jsonify({
+            'on_waitlist': True,
+            'queue_position': queue_position,
+            'user': {
+                'name': user.get('name'),
+                'email': user.get('email'),
+                'academic_level': user.get('academic_level'),
+                'subject_interest': user.get('subject_interest'),
+                'created_at': user.get('created_at').isoformat() if user.get('created_at') else None
+            }
+        })
+        
+    except Exception as e:
+        print(f"Error getting waitlist status: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))

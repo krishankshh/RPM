@@ -230,6 +230,44 @@ class User:
             }
         )
 
+
+    @staticmethod
+    def get_queue_position(user_id):
+        """Get the queue position for a user on the waitlist"""
+        user = User.find_by_id(user_id)
+        if not user or user.get('is_whitelisted', False) or user.get('is_admin', False):
+            return None
+        
+        # Count users who registered before this user and are still on waitlist
+        position = users_collection.count_documents({
+            'created_at': {'$lt': user['created_at']},
+            'is_whitelisted': False,
+            'is_admin': False
+        }) + 1
+        
+        return position
+    
+    @staticmethod
+    def update_all_queue_positions():
+        """Update queue positions for all waitlisted users"""
+        waitlist_users = list(users_collection.find(
+            {"is_whitelisted": False, "is_admin": False}
+        ).sort("created_at", 1))
+        
+        for index, user in enumerate(waitlist_users):
+            position = index + 1
+            users_collection.update_one(
+                {"_id": user["_id"]},
+                {
+                    "$set": {
+                        "queue_position": position,
+                        "position_updated_at": datetime.utcnow()
+                    }
+                }
+            )
+        
+        return len(waitlist_users)
+
 class Credits:
     @staticmethod
     def create_credit_account(user_id):
