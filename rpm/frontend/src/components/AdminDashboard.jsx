@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react'
-import { Users, UserCheck, UserX, Shield, Calendar, CheckSquare, Square } from 'lucide-react'
+import { Users, UserCheck, UserX, Shield, Calendar, CheckSquare, Square, LogOut } from 'lucide-react'
 import { Button } from './ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card'
 import { Badge } from './ui/badge'
 import { Alert, AlertDescription } from './ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs'
 
-const AdminDashboard = () => {
+const AdminDashboard = ({ onLogout }) => {
   const [stats, setStats] = useState(null)
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
@@ -168,9 +168,20 @@ const AdminDashboard = () => {
             <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
             <p className="text-gray-600">Manage users and waitlist</p>
           </div>
-          <div className="flex items-center space-x-2">
-            <Shield className="h-5 w-5 text-blue-600" />
-            <span className="text-sm font-medium text-blue-600">Admin Access</span>
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <Shield className="h-5 w-5 text-blue-600" />
+              <span className="text-sm font-medium text-blue-600">Admin Access</span>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={onLogout} 
+              className="flex items-center space-x-2"
+            >
+              <LogOut className="h-4 w-4" />
+              <span>Logout</span>
+            </Button>
           </div>
         </div>
 
@@ -416,4 +427,6 @@ const AdminDashboard = () => {
 }
 
 export default AdminDashboard
+
+
 

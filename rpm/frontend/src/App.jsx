@@ -242,7 +242,7 @@ function App() {
             element={
               !user ? <Navigate to="/login" /> :
               !user.is_admin ? <Navigate to="/" /> :
-              <AdminDashboard />
+              <AdminDashboard onLogout={handleLogout} />
             } 
           />
         </Routes>
@@ -254,4 +254,6 @@ function App() {
 }
 
 export default App
+
+
 
