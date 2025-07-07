@@ -402,3 +402,9 @@ def verify_jwt_token(token):
     except jwt.InvalidTokenError:
         return None
 
+
+
+    @staticmethod
+    def delete_user(user_id):
+        """Delete a user by ID"""
+        return users_collection.delete_one({"_id": ObjectId(user_id)})

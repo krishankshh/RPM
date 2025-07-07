@@ -381,6 +381,13 @@ const AdminDashboard = ({ onLogout }) => {
                                   Whitelist
                                 </Button>
                               )}
+                              <Button
+                                size="sm"
+                                onClick={() => deleteUser(user._id)}
+                                className="bg-red-600 hover:bg-red-700 ml-2"
+                              >
+                                Delete
+                              </Button>
                             </td>
                           </tr>
                         ))}
@@ -428,5 +435,38 @@ const AdminDashboard = ({ onLogout }) => {
 
 export default AdminDashboard
 
+
+
+
+
+  const deleteUser = async (userId) => {
+    if (!window.confirm("Are you sure you want to delete this user?")) {
+      return
+    }
+    try {
+      const token = localStorage.getItem("token")
+      const response = await fetch(`/api/admin/users/${userId}`, {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      })
+      
+      if (response.ok) {
+        setMessage("User deleted successfully!")
+        fetchUsers()
+        fetchStats()
+        setTimeout(() => setMessage(""), 3000)
+      } else {
+        const errorData = await response.json()
+        setMessage(`Error: ${errorData.error}`)
+        setTimeout(() => setMessage(""), 3000)
+      }
+    } catch (error) {
+      console.error("Error deleting user:", error)
+      setMessage("Error deleting user.")
+      setTimeout(() => setMessage(""), 3000)
+    }
+  }
 
 

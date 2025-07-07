@@ -380,3 +380,25 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     debug = config.FLASK_ENV == 'development'
     app.run(host='0.0.0.0', port=port, debug=debug)
+
+
+# Admin: Delete user
+@app.route("/api/admin/users/<user_id>", methods=["DELETE"])
+@require_auth
+def delete_user_route(user_id):
+    # Check if current user is admin
+    current_user = User.find_by_id(request.current_user_id)
+    if not current_user.get('is_admin', False):
+        return jsonify({"error": "Admin access required"}), 403
+    
+    # Prevent admin from deleting themselves
+    if str(request.current_user_id) == user_id:
+        return jsonify({"error": "Cannot delete your own admin account"}), 400
+
+    result = User.delete_user(user_id)
+    if result.deleted_count == 0:
+        return jsonify({"error": "User not found"}), 404
+    
+    return jsonify({"message": "User deleted successfully"}), 200
+
+
