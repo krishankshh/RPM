@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
-import { signInWithPopup } from 'firebase/auth'
-import { auth, googleProvider } from './firebase'
 import { authAPI } from './api'
 import Cookies from 'js-cookie'
 
@@ -44,36 +42,7 @@ function App() {
     setLoading(false)
   }
 
-  const handleGoogleLogin = async () => {
-    try {
-      setLoading(true)
-      setAuthError('')
-      const result = await signInWithPopup(auth, googleProvider)
-      const user = result.user
-      
-      const userData = {
-        google_id: user.uid,
-        email: user.email,
-        name: user.displayName,
-        picture: user.photoURL
-      }
 
-      const response = await authAPI.googleLogin(userData)
-      
-      Cookies.set('auth_token', response.data.token, { expires: 7 })
-      setUser(response.data.user)
-      
-      // Get credits
-      const creditsResponse = await authAPI.getUserStatus()
-      setCredits(creditsResponse.data.credits)
-      
-    } catch (error) {
-      console.error('Login failed:', error)
-      setAuthError(error.response?.data?.error || 'Login failed. Please try again.')
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const handleManualLogin = async (credentials) => {
     try {
@@ -120,11 +89,10 @@ function App() {
   }
 
   const handleLogout = () => {
-    Cookies.remove('auth_token')
+    Cookies.remove("auth_token")
     setUser(null)
     setCredits(null)
-    setAuthError('')
-    auth.signOut()
+    setAuthError("")
   }
 
   const updateCredits = (newCredits) => {
